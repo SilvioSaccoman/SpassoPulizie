@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  spassocasa-app:
+    image: nginx:alpine
+    container_name: spassocasa-pulizie
+    ports:
+      - "8081:80"
+    volumes:
+      # Il punto (.) indica la cartella attuale dove si trova il file HTML
+      - .:/usr/share/nginx/html:ro
+    restart: unless-stopped
