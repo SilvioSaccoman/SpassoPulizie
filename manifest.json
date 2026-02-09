@@ -1,15 +1,17 @@
 {
   "name": "Spasso Pulizie",
   "short_name": "SpassoPulizie",
+  "description": "Gestione pulizie divertente e veloce",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#88c47c",
   "icons": [
     {
-      "src": "icona.png",
+      "src": "1770653105019.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
