@@ -8,15 +8,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        window.firebaseLib = { initializeApp, getFirestore, doc, onSnapshot, setDoc, collection, getAuth, signInAnonymously, onAuthStateChanged };
-    </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -85,12 +76,15 @@
     <link rel="apple-touch-icon" href="1770653105019.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#88c47c">
-    
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
         const { useState, useEffect, useMemo, useRef } = React;
 
         const firebaseConfig = {
@@ -152,7 +146,6 @@
 
             // Inizializzazione Firebase
             useEffect(() => {
-                const { initializeApp, getFirestore, getAuth, signInAnonymously, onAuthStateChanged } = window.firebaseLib;
                 const app = initializeApp(firebaseConfig);
                 dbRef.current = getFirestore(app);
                 authRef.current = getAuth(app);
@@ -176,11 +169,9 @@
             // Listener dati in tempo reale
             useEffect(() => {
                 if (!user || !dbRef.current) return;
-                const { doc, onSnapshot } = window.firebaseLib;
                 const docRef = doc(dbRef.current, 'pulizie', currentWeek.key);
                 
                 const unsubscribe = onSnapshot(docRef, (snap) => {
-                    // Aggiorniamo solo se non stiamo salvando noi qualcosa
                     if (syncStatus !== 'syncing') {
                         setDbData(snap.exists() ? snap.data() : {});
                     }
@@ -198,7 +189,6 @@
             // Funzione di salvataggio "Debounced"
             const saveToFirebase = async (dataToSave) => {
                 if (!user || !dbRef.current) return;
-                const { doc, setDoc } = window.firebaseLib;
                 
                 setSyncStatus('syncing');
                 try {
@@ -213,19 +203,17 @@
             };
 
             const toggleZone = (zoneId) => {
-                // Aggiornamento grafico immediato (Optimistic)
                 const isCurrentlyDone = !!dbData[zoneId];
                 const newData = { ...dbData, [zoneId]: !isCurrentlyDone };
                 setDbData(newData);
                 pendingDataRef.current = newData;
 
-                // Gestione Debounce: resetta il timer ogni volta che clicchi
                 if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
                 
-                setSyncStatus('idle'); // Indica che c'è una modifica pendente
+                setSyncStatus('idle'); 
                 saveTimeoutRef.current = setTimeout(() => {
                     saveToFirebase(pendingDataRef.current);
-                }, 800); // Aspetta 800ms dopo l'ultimo clic prima di salvare
+                }, 800); 
             };
 
             const getAssignee = (zone, weekNum) => {
