@@ -32,41 +32,32 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Layout Grid */
+        /* Layout Grid Corretto e Pulito */
         .area-ss { grid-column: 3; grid-row: 1; border-radius: 12px; }
         .area-sb { grid-column: 4; grid-row: 1; border-radius: 12px; }
         .area-sg { grid-column: 5; grid-row: 2; border-radius: 12px; }
         
         /* Sala Unita */
-        .area-sala { 
-            grid-column: 1 / 3; 
-            grid-row: 1 / 4; 
-            border-radius: 12px; 
-            z-index: 10; 
-        }
+        .area-sala { grid-column: 1 / 3; grid-row: 1 / 4; border-radius: 12px; z-index: 10; }
         
+        /* Bagno Verde */
         .area-bv { grid-column: 4; grid-row: 3; border-radius: 12px; }
         
-        /* Corridoi e modifiche di unione/smussatura */
-        .area-c-top { 
+        /* Corridoio Unificato e Corretto: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
+        .area-corridoi { 
             grid-column: 3 / 5; 
             grid-row: 2; 
-            border-radius: 12px 12px 12px 0; /* Smussato l'angolo in basso a destra (riga 2, colonna 4) */
+            border-radius: 12px; 
             z-index: 5; 
         }
-        
-        /* Unione omogenea tra 3,2 (Sala) e 3,3 (Corridoio Mid) */
-        .area-c-mid { 
-            grid-column: 3; 
-            grid-row: 3 / 5; 
-            border-radius: 0 0 12px 12px; 
-            margin-top: -8px; 
-            padding-top: 4px; 
+        /* Estensione verticale del corridoio sulla colonna 3 che scende giù in modo pulito */
+        .area-corridoi-ext {
+            grid-column: 3;
+            grid-row: 3 / 5;
+            border-radius: 12px;
+            margin-top: -12px;
+            padding-top: 12px;
             z-index: 4;
-            /* Margine negativo a sinistra e azzeramento bordo per fondersi con la Sala (colonna 2) */
-            margin-left: -6px;
-            padding-left: 2px;
-            border-left: none !important;
         }
         
         .area-bm { grid-column: 3; grid-row: 5; border-radius: 12px; }
@@ -145,8 +136,8 @@
             { id: 'bv', label: 'B. Verde', className: 'area-bv', icon: '🧼', type: 'shared', groupIdx: 0 },
             
             // Gruppo 1: Bagno Marrone + Corridoi + Ingresso
-            { id: 'corr_h', label: 'Corr.', className: 'area-c-top', icon: '↔️', type: 'shared', groupIdx: 1 },
-            { id: 'corr_h', label: '', className: 'area-c-mid', icon: '', type: 'shared', groupIdx: 1, isExtension: true },
+            { id: 'corr_h', label: 'Corr.', className: 'area-corridoi', icon: '↔️', type: 'shared', groupIdx: 1 },
+            { id: 'corr_h', label: '', className: 'area-corridoi-ext', icon: '', type: 'shared', groupIdx: 1, isExtension: true },
             { id: 'ingresso', label: 'Ingresso', className: 'area-ingresso', icon: '🚪', type: 'shared', groupIdx: 1 },
             { id: 'bm', label: 'B. Marrone', className: 'area-bm', icon: '🧻', type: 'shared', groupIdx: 1 },
             
