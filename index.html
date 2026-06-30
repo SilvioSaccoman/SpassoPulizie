@@ -43,27 +43,28 @@
         /* Bagno Verde */
         .area-bv { grid-column: 4; grid-row: 3; border-radius: 12px; }
         
-        /* Corridoio Unificato e Corretto: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
+        /* Corridoio Unificato: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
         .area-corridoi { 
             grid-column: 3 / 5; 
             grid-row: 2; 
             border-radius: 12px; 
-            z-index: 4; /* Abbassato per farlo stare SOTTO l'estensione */
+            z-index: 4; /* Sta sotto l'estensione verticale */
         }
         
-        /* Estensione verticale del corridoio sulla colonna 3 */
+        /* Estensione verticale del corridoio (colonna 3) che si unisce a quella sopra */
         .area-corridoi-ext {
             grid-column: 3;
             grid-row: 3 / 5;
-            z-index: 10; /* Alzato per farlo stare SOPRA il corridoio orizzontale */
+            z-index: 10; /* Va SOPRA il corridoio orizzontale per coprirne la linea */
             
-            /* Mantiene smussati l'angolo in basso a sinistra e quelli a destra, 
-               ma azzera l'angolo in alto a sinistra per agganciarsi pulito */
-            border-radius: 0 12px 12px 12px; 
+            /* Angoli superiori completamente dritti (0) per fondersi a T, angoli inferiori smussati (12px) */
+            border-radius: 0 0 12px 12px; 
             
-            /* Allineamento pulito senza sovrapposizioni forzate */
-            margin-top: 0;
-            padding-top: 0;
+            /* Sovrapposizione millimetrica verso l'alto per cancellare la linea di divisione */
+            margin-top: -6px;
+            padding-top: 6px;
+            
+            border-top: none !important;
         }
         
         .area-bm { grid-column: 3; grid-row: 5; border-radius: 12px; }
