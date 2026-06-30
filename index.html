@@ -44,26 +44,26 @@
         .area-bv { grid-column: 4; grid-row: 3; border-radius: 12px; }
         
         /* Corridoio Unificato: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
+        /* Corridoio Unificato: rimosso lo smussamento solo in basso a sinistra (12px 12px 12px 0) */
         .area-corridoi { 
             grid-column: 3 / 5; 
             grid-row: 2; 
-            border-radius: 12px; 
-            z-index: 4; /* Sta sotto l'estensione verticale */
+            border-radius: 12px 12px 12px 0; 
+            z-index: 4; 
         }
         
-        /* Estensione verticale del corridoio (colonna 3) che si unisce a quella sopra */
+        /* Estensione verticale del corridoio che si sovrappone e si fonde perfettamente */
         .area-corridoi-ext {
             grid-column: 3;
             grid-row: 3 / 5;
-            z-index: 10; /* Va SOPRA il corridoio orizzontale per coprirne la linea */
+            z-index: 10; /* Va SOPRA per nascondere la giunzione */
             
-            /* Angoli superiori completamente dritti (0) per fondersi a T, angoli inferiori smussati (12px) */
+            /* Angoli superiori dritti per aggancio a T, angoli inferiori arrotondati */
             border-radius: 0 0 12px 12px; 
             
-            /* Sovrapposizione millimetrica verso l'alto per cancellare la linea di divisione */
+            /* Sovrapposizione verticale millimetrica */
             margin-top: -6px;
             padding-top: 6px;
-            
             border-top: none !important;
         }
         
