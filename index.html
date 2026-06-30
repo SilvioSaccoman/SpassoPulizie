@@ -48,20 +48,22 @@
             grid-column: 3 / 5; 
             grid-row: 2; 
             border-radius: 12px; 
-            z-index: 5; 
+            z-index: 4; /* Abbassato per farlo stare SOTTO l'estensione */
         }
         
-        /* Estensione verticale del corridoio sulla colonna 3 che scende giù in modo pulito */
+        /* Estensione verticale del corridoio sulla colonna 3 */
         .area-corridoi-ext {
             grid-column: 3;
             grid-row: 3 / 5;
-            z-index: 4;
-            /* Rimuove lo smussamento in alto a sinistra e in basso a sinistra per fondersi a quadrato con la colonna 2 */
-            border-radius: 0 12px 12px 0; 
-            /* Elimina lo stacco con il pezzo sopra senza muoversi a sinistra */
-            margin-top: -12px;
-            padding-top: 12px;
-            border-top: none !important;
+            z-index: 10; /* Alzato per farlo stare SOPRA il corridoio orizzontale */
+            
+            /* Mantiene smussati l'angolo in basso a sinistra e quelli a destra, 
+               ma azzera l'angolo in alto a sinistra per agganciarsi pulito */
+            border-radius: 0 12px 12px 12px; 
+            
+            /* Allineamento pulito senza sovrapposizioni forzate */
+            margin-top: 0;
+            padding-top: 0;
         }
         
         .area-bm { grid-column: 3; grid-row: 5; border-radius: 12px; }
