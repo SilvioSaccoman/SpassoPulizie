@@ -32,7 +32,7 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Layout Grid Corretto e Pulito */
+        /* Layout Grid */
         .area-ss { grid-column: 3; grid-row: 1; border-radius: 12px; }
         .area-sb { grid-column: 4; grid-row: 1; border-radius: 12px; }
         .area-sg { grid-column: 5; grid-row: 2; border-radius: 12px; }
@@ -43,21 +43,26 @@
         /* Bagno Verde */
         .area-bv { grid-column: 4; grid-row: 3; border-radius: 12px; }
         
-        /* Corridoio Unificato e Corretto: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
+        /* Corridoio Orizzontale */
         .area-corridoi { 
             grid-column: 3 / 5; 
             grid-row: 2; 
             border-radius: 12px; 
             z-index: 5; 
         }
-        /* Estensione verticale del corridoio sulla colonna 3 che scende giù in modo pulito */
+
+        /* Blocco Corridoio Verticale (3,3) - Unito perfettamente alla Sala senza smussature e senza bordi sopra */
         .area-corridoi-ext {
             grid-column: 3;
             grid-row: 3 / 5;
-            border-radius: 12px;
-            margin-top: -12px;
-            padding-top: 12px;
-            z-index: 4;
+            z-index: 6;
+            border-radius: 0 12px 12px 12px; /* Angolo in alto a sinistra dritto a 0 per fondersi */
+            margin-left: -5px; /* Elimina il gap laterale con la sala */
+            padding-left: 5px;
+            margin-top: -5px; /* Elimina la linea/bordo superiore agganciandosi perfettamente */
+            padding-top: 5px;
+            border-left: none !important;
+            border-top: none !important;
         }
         
         .area-bm { grid-column: 3; grid-row: 5; border-radius: 12px; }
