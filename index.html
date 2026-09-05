@@ -32,36 +32,22 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Layout Grid Corretto e Pulito */
         .area-ss { grid-column: 3; grid-row: 1; border-radius: 12px; }
         .area-sb { grid-column: 4; grid-row: 1; border-radius: 12px; }
         .area-sg { grid-column: 5; grid-row: 2; border-radius: 12px; }
-        
-        /* Sala Unita */
         .area-sala { grid-column: 1 / 3; grid-row: 1 / 4; border-radius: 12px; z-index: 10; }
-        
-        /* Bagno Verde */
         .area-bv { grid-column: 4; grid-row: 3; border-radius: 12px; }
-        
-        /* Corridoio Unificato: riempie la colonna 3 fino a riga 5 e la colonna 4 a riga 2 */
-        /* Corridoio Unificato: rimosso lo smussamento solo in basso a sinistra (12px 12px 12px 0) */
         .area-corridoi { 
             grid-column: 3 / 5; 
             grid-row: 2; 
             border-radius: 12px 12px 12px 0; 
             z-index: 4; 
         }
-        
-        /* Estensione verticale del corridoio che si sovrappone e si fonde perfettamente */
         .area-corridoi-ext {
             grid-column: 3;
             grid-row: 3 / 5;
-            z-index: 10; /* Va SOPRA per nascondere la giunzione */
-            
-            /* Angoli superiori dritti per aggancio a T, angoli inferiori arrotondati */
+            z-index: 10;
             border-radius: 0 0 12px 12px; 
-            
-            /* Sovrapposizione verticale millimetrica */
             margin-top: -6px;
             padding-top: 6px;
             border-top: none !important;
@@ -82,18 +68,18 @@
             border: 1px solid rgba(0,0,0,0.02);
         }
 
-        /* Colori leggeri per assegnazione */
         .bg-blue-light { background-color: #eff6ff; border-color: #dbeafe; }
         .bg-rose-light { background-color: #fff1f2; border-color: #ffe4e6; }
         .bg-emerald-light { background-color: #ecfdf5; border-color: #d1fae5; }
         
-        /* Colori pieni per completato */
         .done-blue { background-color: #2563eb !important; color: white !important; }
         .done-rose { background-color: #f43f5e !important; color: white !important; }
         .done-emerald { background-color: #10b981 !important; color: white !important; }
 
         .cell-label { font-size: 8px; font-weight: 800; text-transform: uppercase; }
         .assignee-tag { font-size: 6px; font-weight: 900; padding: 1px 4px; border-radius: 4px; margin-top: 2px; }
+        
+        canvas { touch-action: none; }
     </style>
 
     <link rel="icon" type="image/png" sizes="192x192" href="1770653105019.png">
@@ -106,7 +92,7 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         const { useState, useEffect, useMemo, useRef } = React;
@@ -137,32 +123,39 @@
             { id: 'ss', label: 'Silvio', className: 'area-ss', icon: '🛏️', type: 'private', owner: 'Silvio' },
             { id: 'sb', label: 'Boe', className: 'area-sb', icon: '🛏️', type: 'private', owner: 'Boe' },
             { id: 'sg', label: 'Greta', className: 'area-sg', icon: '🛏️', type: 'private', owner: 'Greta' },
-            
-            // Gruppo 0: Bagno Verde + Sala Unita
             { id: 'sala', label: 'Sala', className: 'area-sala', icon: '🛋️', type: 'shared', groupIdx: 0 },
             { id: 'bv', label: 'B. Verde', className: 'area-bv', icon: '🧼', type: 'shared', groupIdx: 0 },
-            
-            // Gruppo 1: Bagno Marrone + Corridoi + Ingresso
             { id: 'corr_h', label: 'Corr.', className: 'area-corridoi', icon: '↔️', type: 'shared', groupIdx: 1 },
             { id: 'corr_h', label: '', className: 'area-corridoi-ext', icon: '', type: 'shared', groupIdx: 1, isExtension: true },
             { id: 'ingresso', label: 'Ingresso', className: 'area-ingresso', icon: '🚪', type: 'shared', groupIdx: 1 },
             { id: 'bm', label: 'B. Marrone', className: 'area-bm', icon: '🧻', type: 'shared', groupIdx: 1 },
-            
-            // Gruppo 2: Cucina da sola
             { id: 'cucina', label: 'Cucina', className: 'area-cucina', icon: '🍳', type: 'shared', groupIdx: 2 }
         ];
+
+        const AVAILABLE_EMOJIS = ['💬', '👋', '🐱', '🐶', '🍕', '🎉', '👨‍🚀', '👩‍🔬', '👨‍💻'];
 
         const App = () => {
             const [user, setUser] = useState(null);
             const [dbData, setDbData] = useState({});
+            const [messages, setMessages] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [syncStatus, setSyncStatus] = useState('idle');
             
+            // Guest/User Chat State
+            const [senderName, setSenderName] = useState(() => localStorage.getItem('spasso_chat_name') || '');
+            const [senderEmoji, setSenderEmoji] = useState(() => localStorage.getItem('spasso_chat_emoji') || '💬');
+            const [textMsg, setTextMsg] = useState('');
+            const [drawMode, setDrawMode] = useState(false);
+            const [drawColor, setDrawColor] = useState('#000000');
+            const [isDrawing, setIsDrawing] = useState(false);
+
+            const canvasRef = useRef(null);
             const dbRef = useRef(null);
             const authRef = useRef(null);
             const saveTimeoutRef = useRef(null);
             const pendingDataRef = useRef(null);
+            const chatBottomRef = useRef(null);
 
             const currentWeek = useMemo(() => {
                 const now = new Date();
@@ -196,35 +189,36 @@
                 return () => unsubscribe();
             }, []);
 
+            // Firebase Listeners
             useEffect(() => {
                 if (!user || !dbRef.current) return;
-                const docRef = doc(dbRef.current, 'pulizie', currentWeek.key);
                 
-                const unsubscribe = onSnapshot(docRef, (snap) => {
+                const docRef = doc(dbRef.current, 'pulizie', currentWeek.key);
+                const unsubMap = onSnapshot(docRef, (snap) => {
                     if (syncStatus !== 'syncing') {
                         setDbData(snap.exists() ? snap.data() : {});
                     }
                     setLoading(false);
-                }, (err) => {
-                    if (err.code === 'permission-denied') {
-                        setError("PERMESSO NEGATO: Controlla le 'Rules' su Firebase.");
-                    }
-                    setLoading(false);
                 });
 
-                return () => unsubscribe();
+                const q = query(collection(dbRef.current, 'chat'), orderBy('timestamp', 'asc'), limit(30));
+                const unsubChat = onSnapshot(q, (snap) => {
+                    const msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setMessages(msgs);
+                    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+                });
+
+                return () => { unsubMap(); unsubChat(); };
             }, [user, currentWeek.key, syncStatus]);
 
             const saveToFirebase = async (dataToSave) => {
                 if (!user || !dbRef.current) return;
-                
                 setSyncStatus('syncing');
                 try {
                     await setDoc(doc(dbRef.current, 'pulizie', currentWeek.key), dataToSave);
                     setSyncStatus('saved');
                     setTimeout(() => setSyncStatus('idle'), 2000);
                 } catch (err) {
-                    console.error("Errore salvataggio:", err);
                     setError("Errore durante il salvataggio.");
                     setSyncStatus('idle');
                 }
@@ -237,7 +231,6 @@
                 pendingDataRef.current = newData;
 
                 if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                
                 setSyncStatus('idle'); 
                 saveTimeoutRef.current = setTimeout(() => {
                     saveToFirebase(pendingDataRef.current);
@@ -247,6 +240,80 @@
             const getAssignee = (zone, weekNum) => {
                 if (zone.type === 'private') return USERS.find(u => u.name === zone.owner);
                 return USERS[(zone.groupIdx + weekNum) % USERS.length];
+            };
+
+            // Canvas Handlers
+            const startDrawing = (e) => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const ctx = canvas.getContext('2d');
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                ctx.beginPath();
+                ctx.moveTo(clientX - rect.left, clientY - rect.top);
+                setIsDrawing(true);
+            };
+
+            const draw = (e) => {
+                if (!isDrawing) return;
+                const canvas = canvasRef.current;
+                const rect = canvas.getBoundingClientRect();
+                const ctx = canvas.getContext('2d');
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                ctx.strokeStyle = drawColor;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineTo(clientX - rect.left, clientY - rect.top);
+                ctx.stroke();
+            };
+
+            const stopDrawing = () => setIsDrawing(false);
+
+            const clearCanvas = () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            };
+
+            const handleNameChange = (val) => {
+                setSenderName(val);
+                localStorage.setItem('spasso_chat_name', val);
+            };
+
+            const handleEmojiChange = (emoji) => {
+                setSenderEmoji(emoji);
+                localStorage.setItem('spasso_chat_emoji', emoji);
+            };
+
+            const sendChatMessage = async (type) => {
+                if (!dbRef.current) return;
+                
+                const finalName = senderName.trim() || 'Ospite Anonimo';
+
+                let payload = {
+                    sender: finalName,
+                    emoji: senderEmoji,
+                    type: type,
+                    timestamp: new Date().getTime()
+                };
+
+                if (type === 'text') {
+                    if (!textMsg.trim()) return;
+                    payload.content = textMsg;
+                    setTextMsg('');
+                } else if (type === 'drawing') {
+                    const canvas = canvasRef.current;
+                    payload.content = canvas.toDataURL();
+                    clearCanvas();
+                    setDrawMode(false);
+                }
+
+                await addDoc(collection(dbRef.current, 'chat'), payload);
             };
 
             if (error) return (
@@ -270,19 +337,20 @@
             );
 
             return (
-                <div className="max-w-md mx-auto p-6 min-h-screen pb-20 text-slate-900">
+                <div className="max-w-md mx-auto p-4 min-h-screen pb-20 text-slate-900">
                     <header className="flex justify-between items-center mb-6">
                         <div>
-                            <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">SpassoCasa</h1>
+                            <h1 className="text-3xl font-black tracking-tighter uppercase leading-none">SpassoCasa</h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Settimana {currentWeek.num}</p>
                                 {syncStatus === 'syncing' && <span className="text-[8px] font-black text-amber-500 uppercase">Salvataggio...</span>}
                                 {syncStatus === 'saved' && <span className="text-[8px] font-black text-emerald-500 uppercase">Salvato!</span>}
                             </div>
                         </div>
+                        
                         <div className="flex -space-x-3">
                             {USERS.map(u => (
-                                <div key={u.id} className={`w-11 h-11 rounded-full border-4 border-[#f1f5f9] ${u.color} flex items-center justify-center text-xl shadow-lg`}>{u.emoji}</div>
+                                <div key={u.id} className={`w-10 h-10 rounded-full border-4 border-[#f1f5f9] ${u.color} flex items-center justify-center text-lg shadow-md`}>{u.emoji}</div>
                             ))}
                         </div>
                     </header>
@@ -309,15 +377,15 @@
                     </main>
 
                     {/* Turni Attuali */}
-                    <section className="mt-8 space-y-3">
+                    <section className="mt-6 space-y-2">
                         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-1">Turni di oggi</h2>
                         {USERS.map(u => {
                             const taskIdx = (u.id - (currentWeek.num % 3) + 3) % 3;
                             return (
-                                <div key={u.id} className="bg-white p-3.5 rounded-3xl flex items-center gap-4 shadow-sm border border-slate-200/50">
-                                    <div className={`w-12 h-12 rounded-2xl ${u.color} flex items-center justify-center text-2xl shadow-lg shadow-current/10`}>{u.emoji}</div>
+                                <div key={u.id} className="bg-white p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-slate-200/50">
+                                    <div className={`w-10 h-10 rounded-xl ${u.color} flex items-center justify-center text-xl shadow-md text-white`}>{u.emoji}</div>
                                     <div className="flex-1">
-                                        <div className="font-extrabold text-slate-800 text-base leading-none mb-1">{u.name}</div>
+                                        <div className="font-extrabold text-slate-800 text-sm leading-none mb-1">{u.name}</div>
                                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{TASK_NAMES[taskIdx]}</div>
                                     </div>
                                 </div>
@@ -325,35 +393,82 @@
                         })}
                     </section>
 
-                    {/* Planning Futuro */}
-                    <section className="mt-10 space-y-4">
-                        <div className="flex justify-between items-end px-1">
-                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Planning Futuro</h2>
-                            <span className="text-[10px] font-bold text-slate-300">Prossime 2 Sett.</span>
-                        </div>
+                    {/* Chat & Disegno Aperta a Tutti */}
+                    <section className="mt-8 bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
+                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Bacheca Libera</h2>
                         
-                        {[1, 2].map(offset => {
-                            const futureWeekNum = currentWeek.num + offset;
-                            return (
-                                <div key={offset} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200">
-                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Settimana {futureWeekNum}</div>
-                                    <div className="flex justify-between gap-2">
-                                        {USERS.map(u => {
-                                            const taskIdx = (u.id - (futureWeekNum % 3) + 3) % 3;
-                                            return (
-                                                <div key={u.id} className={`flex-1 ${u.lightColor} p-2 rounded-2xl text-center border border-slate-100 shadow-inner`}>
-                                                    <div className="text-xl mb-1">{u.emoji}</div>
-                                                    <div className="text-[7px] font-extrabold uppercase text-slate-500 mb-1">{u.name}</div>
-                                                    <div className="text-[6px] font-black text-slate-700 uppercase leading-tight bg-white/80 rounded-lg p-1.5">
-                                                        {TASK_NAMES[taskIdx].split(' + ')[0]}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                        {/* Log Messaggi */}
+                        <div className="h-48 overflow-y-auto space-y-3 pr-1 mb-3 flex flex-col">
+                            {messages.map((m) => {
+                                const isMe = m.sender === (senderName.trim() || 'Ospite Anonimo');
+                                return (
+                                    <div key={m.id} className={`flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                                        <span className="text-[8px] font-extrabold text-slate-400 uppercase px-1 mb-0.5">{m.emoji} {m.sender}</span>
+                                        <div className={`p-2.5 rounded-2xl text-xs ${isMe ? 'bg-rose-500 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}`}>
+                                            {m.type === 'text' ? (
+                                                <p>{m.content}</p>
+                                            ) : (
+                                                <img src={m.content} alt="Disegno" className="w-36 h-auto bg-white rounded-lg border border-slate-200" />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={chatBottomRef} />
+                        </div>
+
+                        {/* Profilo Mittente (Nome & Emoji) */}
+                        <div className="bg-slate-50 p-2 rounded-2xl mb-2 border border-slate-200/60 flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                value={senderName} 
+                                onChange={(e) => handleNameChange(e.target.value)}
+                                placeholder="Il tuo nome..." 
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            />
+                            <div className="flex gap-1 overflow-x-auto max-w-[120px] no-scrollbar">
+                                {AVAILABLE_EMOJIS.map(e => (
+                                    <button key={e} onClick={() => handleEmojiChange(e)}
+                                        className={`text-sm p-1 rounded-lg ${senderEmoji === e ? 'bg-white shadow-sm border border-slate-200 scale-110' : 'opacity-50'}`}>
+                                        {e}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Input Area */}
+                        {drawMode ? (
+                            <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Disegna un appunto</span>
+                                    <div className="flex gap-1">
+                                        {['#000000', '#f43f5e', '#2563eb', '#10b981'].map(c => (
+                                            <button key={c} onClick={() => setDrawColor(c)} 
+                                                className={`w-5 h-5 rounded-full border-2 ${drawColor === c ? 'scale-110 border-slate-700' : 'border-white'}`} 
+                                                style={{ backgroundColor: c }} />
+                                        ))}
                                     </div>
                                 </div>
-                            );
-                        })}
+                                <canvas ref={canvasRef} width={340} height={120} 
+                                    onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                                    onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
+                                    className="bg-white rounded-xl border border-slate-200 w-full cursor-crosshair" />
+                                <div className="flex gap-2">
+                                    <button onClick={clearCanvas} className="flex-1 text-[10px] font-bold uppercase py-2 bg-slate-200 rounded-xl text-slate-600">Pulisci</button>
+                                    <button onClick={() => setDrawMode(false)} className="flex-1 text-[10px] font-bold uppercase py-2 bg-slate-200 rounded-xl text-slate-600">Annulla</button>
+                                    <button onClick={() => sendChatMessage('drawing')} className="flex-1 text-[10px] font-bold uppercase py-2 bg-rose-500 text-white rounded-xl">Invia</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex gap-2">
+                                <button onClick={() => setDrawMode(true)} className="p-3 bg-slate-100 text-slate-600 rounded-2xl text-base hover:bg-slate-200 transition-colors">🎨</button>
+                                <input type="text" value={textMsg} onChange={(e) => setTextMsg(e.target.value)} 
+                                    onKeyDown={(e) => e.key === 'Enter' && sendChatMessage('text')}
+                                    placeholder="Scrivi un messaggio..."
+                                    className="flex-1 bg-slate-100 rounded-2xl px-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-400" />
+                                <button onClick={() => sendChatMessage('text')} className="px-4 bg-rose-500 text-white rounded-2xl text-xs font-black uppercase">Invia</button>
+                            </div>
+                        )}
                     </section>
                 </div>
             );
